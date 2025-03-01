@@ -1,5 +1,6 @@
 # 计算体心立方“中心原子团”模型从第1层到第30层的数据
 import math
+from random import expovariate
 
 
 def convert_to_number(value_str):
@@ -54,80 +55,93 @@ def find_closest_same_order(target, numbers, diff=10):
 
 
 def compute_bcc_layers(n_layers=30):
-    # 前一层的累计原子数 N(n-1)，初始时 N(0)=0
+    """计算BCC晶格结构的层数据并格式化输出"""
+
+    # 封装数据初始化函数
+    def initialize_data():
+        masses_str = [
+            "2.4 M", "1.2730 G", "172.57 G", "125.20 G", "4.70 M",
+            "93.5 M", "4.183 G", "0.5110 M", "105.66 M", "1776.93 M",
+            "91.1880 G", "0.8", "0.17 M", "18.2 M", "80.3692 G"
+        ]
+        return {convert_to_number(m): m for m in masses_str}
+
+    # 计算每层数据的函数
+    def calculate_layer_data(n, prev_cumulative_layer):
+        odd_atoms = n ** 3  # 奇晶格原子数 = n^3
+        even_atoms = (n - 1) ** 3  # 偶晶格原子数 = (n-1)^3
+        cumulative_layer = odd_atoms + even_atoms  # 累计原子数 N(n)
+        new_atoms = cumulative_layer - prev_cumulative_layer  # 本层增加的原子数
+        return odd_atoms, even_atoms, new_atoms, cumulative_layer
+
+    # 计算质量估计的函数
+    def calculate_mass_estimate(cumulative_total):
+        units = ["", "K", "M", "G"]
+        unit_index = 2
+        estimate_mass = 0.511 / 136 * cumulative_total
+
+        while estimate_mass > 1000 or estimate_mass < 1:
+            if estimate_mass > 1000:
+                estimate_mass /= 1000
+                unit_index += 1
+            else:
+                estimate_mass *= 1000
+                unit_index -= 1
+
+        return f"{estimate_mass:.3f} {units[unit_index]}"
+
+    # 打印表头的函数
+    def print_header():
+        headers = [
+            "Layer(n)", "Odd(n³)", "Event((n-1)³)", "NewAtoms",
+            "SumLayers(n)", "SumSumLayers R(n)", "Triangle Num T(x)", "MassCompare",
+            "            Exposure"
+        ]
+        print("  ".join(f"{h:<10}" for h in headers))
+        print("-" * 100)  # 分隔线
+
+    # 主计算逻辑
+    masses = initialize_data()
     prev_cumulative_layer = 0
-    # 汇总数据 R(n) = N(1) + N(2) + ... + N(n)
     cumulative_total = 0
-
-    masses_str = [
-        "2.3 M",
-        "1.2730 G",
-        "172.57 G",
-        "125.20 G",
-        "4.70 M",
-        "93.5 M",
-        "4.183 G",
-        "0.5110 M",
-        "105.66 M",
-        "1776.93 M",
-        "91.1880 G",
-        "0.8",
-        "0.17 M",
-        "18.2 M",
-        "80.3692 G",
-    ]
-    masses = {convert_to_number(_): _ for _ in masses_str}
-
-    # 打印表头（各列含义）
-    header = "Layer\tOddAtoms(n^3)\tEvenAtoms((n-1)^3)\tNewAtoms L(n)=N(n)-N(n-1)\tCumulativeLayer N(n)=n^3+(n-1)^3\tCumulativeTotal R(n)\tTriangularNum T(x)\tRelate"
-    header_lengths = [len(_) + 4 for _ in header.split("\t")]
-    print(header)
-    # print(header_lengths)
 
     occupied = set()
     total = 0
     total_occupied = 0
 
-    # 循环计算每一层的数据
-    for n in range(1, n_layers + 1):
-        odd_atoms = n ** 3  # 奇晶格原子数 = n^3
-        even_atoms = (n - 1) ** 3  # 偶晶格原子数 = (n-1)^3，当 n=1 时为 0
-        cumulative_layer = odd_atoms + even_atoms  # 累计原子数 N(n)
-        new_atoms = cumulative_layer - prev_cumulative_layer  # 本层增加的原子数，即 N(n) - N(n-1)
+    print_header()
 
-        cumulative_total += cumulative_layer  # 更新“汇总数据”
+    for n in range(1, n_layers + 1):
+        odd_atoms, even_atoms, new_atoms, cumulative_layer = calculate_layer_data(n, prev_cumulative_layer)
+        exposure = (odd_atoms - even_atoms)
+        cumulative_total += cumulative_layer
         total += cumulative_total
 
-        units = ["", "K", "M", "G"]
-        unit_index = 2
-        estimate_mass_data = 0.511 / 136 * cumulative_total
-
-        while estimate_mass_data > 1000 or estimate_mass_data < 1:
-            if estimate_mass_data > 1000:
-                estimate_mass_data /= 1000
-                unit_index += 1
-            else:
-                estimate_mass_data *= 1000
-                unit_index -= 1
-        estimate_mass_str = f"{estimate_mass_data:.3f} {units[unit_index]}"
+        estimate_mass_str = calculate_mass_estimate(cumulative_total)
         estimate_mass = convert_to_number(estimate_mass_str)
 
-        # 打印当前层的所有数据，使用制表符进行分隔
+        # 查找最接近的质量值
         closest = find_closest_same_order(estimate_mass, masses, diff=5)
-        closest_print = f"{estimate_mass_str}/{masses[closest[0]]} : {closest[1]}%" if closest[
-            0] else f"{estimate_mass_str}"
         if closest[0]:
+            closest_print = f"{estimate_mass_str}/{masses[closest[0]]}:{closest[1]}%"
             occupied.add(masses[closest[0]])
             total_occupied += cumulative_total
+        else:
+            closest_print = f"{estimate_mass_str}"
+
+        # 打印格式化的数据行
+        triangle_info = f"T({data[cumulative_total]})→T({math.sqrt(data[cumulative_total]):.0f}²)"
         print(
-            f"{n:<9}{odd_atoms:<17}{even_atoms:<22}{new_atoms:<29}{cumulative_layer:<36}{cumulative_total:<20}T({data[cumulative_total]:<5}) -> T({math.sqrt(data[cumulative_total]):<3.0f}^2)    {closest_print:<10}"
+            f"{n:<10}  {odd_atoms:<10}  {even_atoms:<15}  {new_atoms:<10}  "
+            f"{cumulative_layer:<15}  {cumulative_total:<10}  {triangle_info:<16}  {closest_print:<30}  {exposure}"
         )
 
-        # 更新前一层的累计值
         prev_cumulative_layer = cumulative_layer
+
+    # 打印统计信息
     un_occupied = set(masses.values()) - occupied
-    print(f"Not found: {un_occupied}")
-    print(f"Percentage found: {total_occupied / total * 100:.2f}%")
+    print("\n未匹配质量:", ", ".join(un_occupied))
+    print(f"匹配百分比: {total_occupied / total * 100:.2f}%")
 
 
 data = {}
