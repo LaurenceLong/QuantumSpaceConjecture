@@ -95,10 +95,10 @@ def compute_bcc_layers(n_layers=30):
         headers = [
             "Layer(n)", "Odd(n³)", "Event((n-1)³)", "NewAtoms",
             "SumLayers(n)", "SumSumLayers R(n)", "Triangle Num T(x)", "MassCompare",
-            "            Exposure"
+            "        Exposure", "SumExposure", "SumSumExposure"
         ]
         print("  ".join(f"{h:<10}" for h in headers))
-        print("-" * 100)  # 分隔线
+        print("-" * 180)  # 分隔线
 
     # 主计算逻辑
     masses = initialize_data()
@@ -109,11 +109,18 @@ def compute_bcc_layers(n_layers=30):
     total = 0
     total_occupied = 0
 
+    # 初始化暴露度相关变量
+    sum_exposure = 0
+    sum_sum_exposure = 0
+
     print_header()
 
     for n in range(1, n_layers + 1):
         odd_atoms, even_atoms, new_atoms, cumulative_layer = calculate_layer_data(n, prev_cumulative_layer)
-        exposure = (odd_atoms - even_atoms)
+        exposure = (odd_atoms - even_atoms) * (-1) ** (n + 1)  # 计算暴露度
+        sum_exposure += exposure  # 累计暴露度
+        sum_sum_exposure += sum_exposure  # 累计累计暴露度
+
         cumulative_total += cumulative_layer
         total += cumulative_total
 
@@ -133,7 +140,8 @@ def compute_bcc_layers(n_layers=30):
         triangle_info = f"T({data[cumulative_total]})→T({math.sqrt(data[cumulative_total]):.0f}²)"
         print(
             f"{n:<10}  {odd_atoms:<10}  {even_atoms:<15}  {new_atoms:<10}  "
-            f"{cumulative_layer:<15}  {cumulative_total:<10}  {triangle_info:<16}  {closest_print:<30}  {exposure}"
+            f"{cumulative_layer:<15}  {cumulative_total:<10}  {triangle_info:<16}  {closest_print:<30}  "
+            f"{exposure:<10}  {sum_exposure:<10}  {sum_sum_exposure:<10}"
         )
 
         prev_cumulative_layer = cumulative_layer
