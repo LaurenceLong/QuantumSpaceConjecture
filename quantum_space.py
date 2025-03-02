@@ -61,7 +61,7 @@ def compute_bcc_layers(n_layers=30):
     def initialize_data():
         masses_str = [
             "2.4 M", "1.2730 G", "172.57 G", "125.20 G", "4.70 M",
-            "93.5 M", "4.183 G", "0.5110 M", "105.66 M", "1776.93 M",
+            "93.5 M", "4.183 G", "0.51099895 M", "105.66 M", "1776.93 M",
             "91.1880 G", "0.8", "0.17 M", "18.2 M", "80.3692 G"
         ]
         return {convert_to_number(m): m for m in masses_str}
@@ -78,7 +78,7 @@ def compute_bcc_layers(n_layers=30):
     def calculate_mass_estimate(cumulative_total):
         units = ["", "K", "M", "G"]
         unit_index = 2
-        estimate_mass = 0.511 / 136 * cumulative_total
+        estimate_mass = 0.5110 / 136 * cumulative_total
 
         while estimate_mass > 1000 or estimate_mass < 1:
             if estimate_mass > 1000:
@@ -94,8 +94,8 @@ def compute_bcc_layers(n_layers=30):
     def print_header():
         headers = [
             "Layer(n)", "Odd(n³)", "Event((n-1)³)", "NewAtoms",
-            "SumLayers(n)", "SumSumLayers R(n)", "Triangle Num T(x)", "MassCompare",
-            "        Exposure", "SumExposure", "SumSumExposure"
+            "Cube(n)", "SumCube R(n)", "Triangle Num T(x)", "MassCompare",
+            "        CubeExposure", "SumCubeExposure"
         ]
         print("  ".join(f"{h:<10}" for h in headers))
         print("-" * 180)  # 分隔线
@@ -116,10 +116,10 @@ def compute_bcc_layers(n_layers=30):
     print_header()
 
     for n in range(1, n_layers + 1):
+        # exposure += new_atoms * (-1) ** (n + 1)  # 计算暴露度
+        exposure = n ** 2 * (1) ** (n + 1)
         odd_atoms, even_atoms, new_atoms, cumulative_layer = calculate_layer_data(n, prev_cumulative_layer)
-        exposure = (odd_atoms - even_atoms) * (-1) ** (n + 1)  # 计算暴露度
         sum_exposure += exposure  # 累计暴露度
-        sum_sum_exposure += sum_exposure  # 累计累计暴露度
 
         cumulative_total += cumulative_layer
         total += cumulative_total
@@ -141,7 +141,7 @@ def compute_bcc_layers(n_layers=30):
         print(
             f"{n:<10}  {odd_atoms:<10}  {even_atoms:<15}  {new_atoms:<10}  "
             f"{cumulative_layer:<15}  {cumulative_total:<10}  {triangle_info:<16}  {closest_print:<30}  "
-            f"{exposure:<10}  {sum_exposure:<10}  {sum_sum_exposure:<10}"
+            f"{exposure:<10}  {sum_exposure:<10}"
         )
 
         prev_cumulative_layer = cumulative_layer
