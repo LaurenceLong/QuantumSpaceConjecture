@@ -64,6 +64,7 @@ def compute_bcc_layers(n_layers=30):
             "93.5 M", "4.183 G", "0.51099895 M", "105.66 M", "1776.93 M",
             "91.1880 G", "0.8", "0.17 M", "18.2 M", "80.3692 G"
         ]
+        
         return {convert_to_number(m): m for m in masses_str}
 
     # 计算每层数据的函数
@@ -94,8 +95,7 @@ def compute_bcc_layers(n_layers=30):
     def print_header():
         headers = [
             "Layer(n)", "Odd(n³)", "Event((n-1)³)", "NewAtoms",
-            "Cube(n)", "SumCube R(n)", "Triangle Num T(x)", "MassCompare",
-            "        CubeExposure", "SumCubeExposure"
+            "Cube(n)", "SumCube R(n)", "Triangle Num T(x)", "MassCompare"
         ]
         print("  ".join(f"{h:<10}" for h in headers))
         print("-" * 180)  # 分隔线
@@ -141,7 +141,7 @@ def compute_bcc_layers(n_layers=30):
         print(
             f"{n:<10}  {odd_atoms:<10}  {even_atoms:<15}  {new_atoms:<10}  "
             f"{cumulative_layer:<15}  {cumulative_total:<10}  {triangle_info:<16}  {closest_print:<30}  "
-            f"{exposure:<10}  {sum_exposure:<10}"
+            # f"{exposure:<10}  {sum_exposure:<10}"
         )
 
         prev_cumulative_layer = cumulative_layer
