@@ -12,8 +12,8 @@ This paper proposes a hypothesis based on spatial quantization, attempting to ex
 - **Spin and Chirality**: Each spatial quantum possesses spin and is assigned right-handed chirality (where the right-hand thumb is the top, and the opposite is the bottom).  
 - **Interactions**: There exists an attractive force between the "top" and "bottom" of adjacent spatial quanta, while repulsive forces act between like states (top-top or bottom-bottom). Based on this mechanism, spatial quanta self-organize into a body-centered cubic (BCC) lattice, with a unit cell diameter of  
   \[
-  a = \sqrt{2}\,l_p\,.
-  \]  
+  \sqrt{3} a = 4 l_p\,,
+  \]
 
 ### **1.2 Motion Characteristics**  
 - **Quantum Superposition**: Each spatial quantum exists in a quantum superposition state at any given moment, without a definite trajectory.  
