@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BCC晶格结构(2层，9个原子)</title>
+    <title>BCC晶格结构(多层原子)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -57,10 +57,10 @@
     </style>
 </head>
 <body>
-    <h1>体心立方结构(BCC) - 2层(9个原子)</h1>
+    <h1 id="titleText">体心立方结构(BCC) - 2层(9个原子)</h1>
 
     <div class="info">
-        <p><strong>结构说明：</strong> 本图展示了BCC结构的2层原子排列，总共9个原子，包括中心原子(1)、第一层原子(8)。</p>
+        <p id="structureInfo"><strong>结构说明：</strong> 本图展示了BCC结构的2层原子排列，总共9个原子，包括中心原子(1)、第一层原子(8)。</p>
         <p><strong>紧密排列条件：</strong> 4r = √3 × a，其中r是原子半径，a是晶格边长。</p>
     </div>
 
@@ -80,9 +80,14 @@
             <label for="atomOpacity">原子透明度:</label>
             <input type="range" id="atomOpacity" min="0.1" max="1.0" step="0.1" value="0.7">
             <span id="opacityValue">0.7</span>
-            <label for="sizeScaleControl">原子大小:</label>
-            <input type="range" id="sizeScaleControl" min="0.5" max="2.5" step="0.01" value="1">
-            <span id="sizeScaleValue">1</span>
+            <label for="latticeConstantControl">晶格常数a:</label>
+            <input type="range" id="latticeConstantControl" min="0.2" max="2.0" step="0.01" value="1">
+            <span id="latticeConstantValue">1</span>
+        </div>
+        <div class="control-group">
+            <label for="layerControl">原子层数:</label>
+            <input type="range" id="layerControl" min="0" max="4" step="1" value="1">
+            <span id="layerValue">1</span>
         </div>
     </div>
 
@@ -92,13 +97,12 @@
         const ctx = canvas.getContext('2d');
 
         // 设置参数
-        const a = 160; // 晶格边长
-        const r = Math.sqrt(3) * a / 4; // 原子半径，满足4r = sqrt(3)*a
+        const r = 75; // 原子半径固定不变
+        let aScale = 1; // 晶格常数a的缩放比例
+        let a = 4 * r / Math.sqrt(3) * aScale; // 晶格边长，根据紧密排列条件4r = sqrt(3)*a计算
 
-        // 计算理论上的最佳sizeScale
-        // 实际上，顶点原子在投影中应比中心原子4√2/3才能形成紧密内切的莲花形状
-        let sizeScale = 1; // 根据实验和理论计算得出的最佳值
         let atomOpacity = 0.7; // 原子透明度
+        let currentLayers = 1; // 当前原子层数
 
         // 配置3D视图
         let angleX = Math.PI / 6;
@@ -108,21 +112,163 @@
         let showContacts = false;
         let showAxes = false;
 
-        // 创建BCC结构的原子位置（2层，9个原子）
-        const atoms = [
-            // 中心原子 (0,0,0)
-            {x: 0, y: 0, z: 0, color: "#4285F4", layer: 0},
+        // 根据层数生成BCC结构的原子
+        function generateAtoms(layers) {
+            let atoms = [];
 
-            // 第一层原子（体心立方的8个顶点）
-            {x: a/2, y: a/2, z: a/2, color: "#EA4335", layer: 1},
-            {x: a/2, y: a/2, z: -a/2, color: "#EA4335", layer: 1},
-            {x: a/2, y: -a/2, z: a/2, color: "#EA4335", layer: 1},
-            {x: a/2, y: -a/2, z: -a/2, color: "#EA4335", layer: 1},
-            {x: -a/2, y: a/2, z: a/2, color: "#EA4335", layer: 1},
-            {x: -a/2, y: a/2, z: -a/2, color: "#EA4335", layer: 1},
-            {x: -a/2, y: -a/2, z: a/2, color: "#EA4335", layer: 1},
-            {x: -a/2, y: -a/2, z: -a/2, color: "#EA4335", layer: 1}
-        ];
+            // 第0层: 1个中心原子
+            atoms.push({x: 0, y: 0, z: 0, color: "#4285F4", layer: 0});
+
+            // 第1层: 8个顶点原子
+            if (layers >= 1) {
+                atoms.push({x: a/2, y: a/2, z: a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: a/2, y: a/2, z: -a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: a/2, y: -a/2, z: a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: a/2, y: -a/2, z: -a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: -a/2, y: a/2, z: a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: -a/2, y: a/2, z: -a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: -a/2, y: -a/2, z: a/2, color: "#EA4335", layer: 1});
+                atoms.push({x: -a/2, y: -a/2, z: -a/2, color: "#EA4335", layer: 1});
+            }
+
+            // 第2层: 18个原子 (6个面心 + 12个棱中心)
+            if (layers >= 2) {
+                // 6个面心原子 (a,0,0), (-a,0,0), etc.
+                atoms.push({x: a, y: 0, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: -a, y: 0, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: a, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: -a, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: 0, z: a, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: 0, z: -a, color: "#FBBC05", layer: 2});
+
+                // 12个棱中心原子
+                atoms.push({x: a, y: a, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: a, y: -a, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: -a, y: a, z: 0, color: "#FBBC05", layer: 2});
+                atoms.push({x: -a, y: -a, z: 0, color: "#FBBC05", layer: 2});
+
+                atoms.push({x: a, y: 0, z: a, color: "#FBBC05", layer: 2});
+                atoms.push({x: a, y: 0, z: -a, color: "#FBBC05", layer: 2});
+                atoms.push({x: -a, y: 0, z: a, color: "#FBBC05", layer: 2});
+                atoms.push({x: -a, y: 0, z: -a, color: "#FBBC05", layer: 2});
+
+                atoms.push({x: 0, y: a, z: a, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: a, z: -a, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: -a, z: a, color: "#FBBC05", layer: 2});
+                atoms.push({x: 0, y: -a, z: -a, color: "#FBBC05", layer: 2});
+            }
+
+            // 第3层: 32个原子 (24个外层顶点 + 8个第二层立方体顶点)
+            if (layers >= 3) {
+                // 8个第二层立方体顶点 (a,a,a), etc.
+                atoms.push({x: a, y: a, z: a, color: "#34A853", layer: 3});
+                atoms.push({x: a, y: a, z: -a, color: "#34A853", layer: 3});
+                atoms.push({x: a, y: -a, z: a, color: "#34A853", layer: 3});
+                atoms.push({x: a, y: -a, z: -a, color: "#34A853", layer: 3});
+                atoms.push({x: -a, y: a, z: a, color: "#34A853", layer: 3});
+                atoms.push({x: -a, y: a, z: -a, color: "#34A853", layer: 3});
+                atoms.push({x: -a, y: -a, z: a, color: "#34A853", layer: 3});
+                atoms.push({x: -a, y: -a, z: -a, color: "#34A853", layer: 3});
+
+                // 24个外层顶点 (比如 (a+a/2, a/2, a/2) 等)
+                // x = ±(a+a/2), y,z = ±a/2
+                atoms.push({x: a+a/2, y: a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a+a/2, y: a/2, z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a+a/2, y: -a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a+a/2, y: -a/2, z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -(a+a/2), y: a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -(a+a/2), y: a/2, z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -(a+a/2), y: -a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -(a+a/2), y: -a/2, z: -a/2, color: "#34A853", layer: 3});
+
+                // y = ±(a+a/2), x,z = ±a/2
+                atoms.push({x: a/2, y: a+a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: a+a/2, z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: a+a/2, z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: a+a/2, z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: -(a+a/2), z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: -(a+a/2), z: -a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: -(a+a/2), z: a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: -(a+a/2), z: -a/2, color: "#34A853", layer: 3});
+
+                // z = ±(a+a/2), x,y = ±a/2
+                atoms.push({x: a/2, y: a/2, z: a+a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: -a/2, z: a+a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: a/2, z: a+a/2, color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: -a/2, z: a+a/2, color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: a/2, z: -(a+a/2), color: "#34A853", layer: 3});
+                atoms.push({x: a/2, y: -a/2, z: -(a+a/2), color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: a/2, z: -(a+a/2), color: "#34A853", layer: 3});
+                atoms.push({x: -a/2, y: -a/2, z: -(a+a/2), color: "#34A853", layer: 3});
+            }
+
+            // 第4层: 更多的原子 (如果需要的话)
+            if (layers >= 4) {
+                // 添加第4层的26个原子，包括面心和棱中心位置
+                // 面心位置 (2a,0,0) 等
+                atoms.push({x: 2*a, y: 0, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -2*a, y: 0, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: 2*a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -2*a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: 0, z: 2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: 0, z: -2*a, color: "#4A86E8", layer: 4});
+
+                // 各种位置组合，如(a+a/2, a+a/2, 0)等
+                // xy平面
+                atoms.push({x: a+a/2, y: a+a/2, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: a+a/2, y: -(a+a/2), z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -(a+a/2), y: a+a/2, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -(a+a/2), y: -(a+a/2), z: 0, color: "#4A86E8", layer: 4});
+
+                // xz平面
+                atoms.push({x: a+a/2, y: 0, z: a+a/2, color: "#4A86E8", layer: 4});
+                atoms.push({x: a+a/2, y: 0, z: -(a+a/2), color: "#4A86E8", layer: 4});
+                atoms.push({x: -(a+a/2), y: 0, z: a+a/2, color: "#4A86E8", layer: 4});
+                atoms.push({x: -(a+a/2), y: 0, z: -(a+a/2), color: "#4A86E8", layer: 4});
+
+                // yz平面
+                atoms.push({x: 0, y: a+a/2, z: a+a/2, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: a+a/2, z: -(a+a/2), color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -(a+a/2), z: a+a/2, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -(a+a/2), z: -(a+a/2), color: "#4A86E8", layer: 4});
+
+                // (2a,a,0)类型位置
+                atoms.push({x: 2*a, y: a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: 2*a, y: -a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -2*a, y: a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -2*a, y: -a, z: 0, color: "#4A86E8", layer: 4});
+
+                atoms.push({x: 2*a, y: 0, z: a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 2*a, y: 0, z: -a, color: "#4A86E8", layer: 4});
+                atoms.push({x: -2*a, y: 0, z: a, color: "#4A86E8", layer: 4});
+                atoms.push({x: -2*a, y: 0, z: -a, color: "#4A86E8", layer: 4});
+
+                atoms.push({x: 0, y: 2*a, z: a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: 2*a, z: -a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -2*a, z: a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -2*a, z: -a, color: "#4A86E8", layer: 4});
+
+                atoms.push({x: a, y: 2*a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -a, y: 2*a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: a, y: -2*a, z: 0, color: "#4A86E8", layer: 4});
+                atoms.push({x: -a, y: -2*a, z: 0, color: "#4A86E8", layer: 4});
+
+                atoms.push({x: a, y: 0, z: 2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: -a, y: 0, z: 2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: a, y: 0, z: -2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: -a, y: 0, z: -2*a, color: "#4A86E8", layer: 4});
+
+                atoms.push({x: 0, y: a, z: 2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -a, z: 2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: a, z: -2*a, color: "#4A86E8", layer: 4});
+                atoms.push({x: 0, y: -a, z: -2*a, color: "#4A86E8", layer: 4});
+            }
+
+            return atoms;
+        }
+
+        // 初始化原子数据
+        let atoms = generateAtoms(currentLayers);
 
         // 计算两点之间的距离
         function distance3D(p1, p2) {
@@ -136,7 +282,7 @@
         // 检查原子之间的距离，验证紧密排列条件
         function checkAtomDistances() {
             const centerAtom = atoms[0];
-            const cornerAtoms = atoms.slice(1);
+            const cornerAtoms = atoms.filter(atom => atom.layer === 1);
 
             // 计算中心原子到角点原子的距离
             const distances = cornerAtoms.map(atom => {
@@ -207,15 +353,18 @@
 
         // 绘制立方体框架
         function drawCube() {
+            // 根据当前层数和晶格常数计算立方体大小
+            const cubeSize = a / 2;
+
             const vertices = [
-                {x: -a/2, y: -a/2, z: -a/2},
-                {x: a/2, y: -a/2, z: -a/2},
-                {x: a/2, y: a/2, z: -a/2},
-                {x: -a/2, y: a/2, z: -a/2},
-                {x: -a/2, y: -a/2, z: a/2},
-                {x: a/2, y: -a/2, z: a/2},
-                {x: a/2, y: a/2, z: a/2},
-                {x: -a/2, y: a/2, z: a/2}
+                {x: -cubeSize, y: -cubeSize, z: -cubeSize},
+                {x: cubeSize, y: -cubeSize, z: -cubeSize},
+                {x: cubeSize, y: cubeSize, z: -cubeSize},
+                {x: -cubeSize, y: cubeSize, z: -cubeSize},
+                {x: -cubeSize, y: -cubeSize, z: cubeSize},
+                {x: cubeSize, y: -cubeSize, z: cubeSize},
+                {x: cubeSize, y: cubeSize, z: cubeSize},
+                {x: -cubeSize, y: cubeSize, z: cubeSize}
             ];
 
             // 转换顶点
@@ -244,13 +393,15 @@
             if (!showContacts) return;
 
             const center = project3DTo2D(atoms[0]);
+            // 只连接第一层的原子（顶点原子）
+            const vertexAtoms = atoms.filter(atom => atom.layer === 1);
 
             ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 3]);
 
-            for (let i = 1; i < atoms.length; i++) {
-                const vertex = project3DTo2D(atoms[i]);
+            for (const atom of vertexAtoms) {
+                const vertex = project3DTo2D(atom);
                 ctx.beginPath();
                 ctx.moveTo(center.x, center.y);
                 ctx.lineTo(vertex.x, vertex.y);
@@ -289,21 +440,18 @@
 
         // 绘制单个原子
         function drawAtom(atom, projected) {
-            // 计算半径（应用sizeScale）
-            const radius = r * sizeScale;
-
             // 绘制原子
             ctx.beginPath();
-            ctx.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
+            ctx.arc(projected.x, projected.y, r, 0, Math.PI * 2);
 
             // 创建径向渐变效果
             const gradient = ctx.createRadialGradient(
-                projected.x - radius * 0.3,
-                projected.y - radius * 0.3,
+                projected.x - r * 0.3,
+                projected.y - r * 0.3,
                 0,
                 projected.x,
                 projected.y,
-                radius
+                r
             );
 
             // 设置渐变颜色
@@ -323,9 +471,9 @@
             // 添加高光
             ctx.beginPath();
             ctx.arc(
-                projected.x - radius * 0.3,
-                projected.y - radius * 0.3,
-                radius * 0.2,
+                projected.x - r * 0.3,
+                projected.y - r * 0.3,
+                r * 0.2,
                 0,
                 Math.PI * 2
             );
@@ -339,9 +487,10 @@
 
             const centerAtom = atoms[0];
             const centerProjected = project3DTo2D(centerAtom);
+            // 只显示第一层（顶点）原子的接触点
+            const cornerAtoms = atoms.filter(atom => atom.layer === 1);
 
-            for (let i = 1; i < atoms.length; i++) {
-                const cornerAtom = atoms[i];
+            for (const cornerAtom of cornerAtoms) {
                 const cornerProjected = project3DTo2D(cornerAtom);
 
                 // 计算接触点的位置 (在中心原子和角原子之间)
@@ -425,6 +574,46 @@
             return projectedAtoms.sort((a, b) => b.projected.z - a.projected.z);
         }
 
+        // 更新标题和说明
+        function updateLabels() {
+            // 计算每层原子数量
+            const atomCounts = {};
+            for (const atom of atoms) {
+                atomCounts[atom.layer] = (atomCounts[atom.layer] || 0) + 1;
+            }
+
+            // 根据BCC结构的原子数量规律检查
+            const expectedCounts = [1, 8, 18, 32, 50];
+
+            // 生成原子总数和描述
+            let totalAtoms = 0;
+            let description = "";
+
+            for (let i = 0; i <= currentLayers; i++) {
+                if (atomCounts[i]) {
+                    totalAtoms += atomCounts[i];
+                    if (description) description += "、";
+                    if (i === 0) {
+                        description += `中心原子(${atomCounts[i]})`;
+                    } else {
+                        description += `第${i}层原子(${atomCounts[i]})`;
+                    }
+                }
+            }
+
+            // 更新标题和说明文字
+            document.getElementById('titleText').textContent = `体心立方结构(BCC) - ${currentLayers}层(${totalAtoms}个原子)`;
+            document.getElementById('structureInfo').innerHTML = `<strong>结构说明：</strong> 本图展示了BCC结构的${currentLayers}层原子排列，总共${totalAtoms}个原子，包括${description}。`;
+        }
+
+        // 更新晶格常数
+        function updateLatticeConstant(scale) {
+            aScale = scale;
+            a = 4 * r / Math.sqrt(3) * aScale;
+            atoms = generateAtoms(currentLayers);
+            document.getElementById('latticeConstantValue').textContent = aScale.toFixed(2);
+        }
+
         // 绘制场景
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -454,98 +643,114 @@
         // 绘制图例
         function drawLegend() {
             const legendX = 20;
-            const legendY = 30;
+            let legendY = 30;
             const spacing = 25;
 
             ctx.font = "14px Arial";
 
-            // 中心原子图例
-            ctx.beginPath();
-            ctx.arc(legendX, legendY, 10, 0, Math.PI * 2);
-            const gradient1 = ctx.createRadialGradient(
-                legendX - 3, legendY - 3, 0,
-                legendX, legendY, 10
-            );
-            gradient1.addColorStop(0, lightenColor("#4285F4", 50, atomOpacity));
-            gradient1.addColorStop(0.7, addOpacity("#4285F4", atomOpacity));
-            gradient1.addColorStop(1, darkenColor("#4285F4", 30, atomOpacity));
-            ctx.fillStyle = gradient1;
-            ctx.fill();
-            ctx.strokeStyle = darkenColor("#4285F4", 20, atomOpacity);
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-            ctx.fillStyle = "#000";
-            ctx.fillText("中心原子 (1个)", legendX + 20, legendY + 5);
+            // 根据当前显示的层数绘制图例
+            const layerColors = [
+                "#4285F4", // 中心原子
+                "#EA4335", // 第一层
+                "#FBBC05", // 第二层
+                "#34A853", // 第三层
+                "#4A86E8"  // 第四层
+            ];
 
-            // 第一层原子图例
-            ctx.beginPath();
-            ctx.arc(legendX, legendY + spacing, 10, 0, Math.PI * 2);
-            const gradient2 = ctx.createRadialGradient(
-                legendX - 3, legendY + spacing - 3, 0,
-                legendX, legendY + spacing, 10
-            );
-            gradient2.addColorStop(0, lightenColor("#EA4335", 50, atomOpacity));
-            gradient2.addColorStop(0.7, addOpacity("#EA4335", atomOpacity));
-            gradient2.addColorStop(1, darkenColor("#EA4335", 30, atomOpacity));
-            ctx.fillStyle = gradient2;
-            ctx.fill();
-            ctx.strokeStyle = darkenColor("#EA4335", 20, atomOpacity);
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-            ctx.fillStyle = "#000";
-            ctx.fillText("第一层原子 (8个)", legendX + 20, legendY + spacing + 5);
+            const layerNames = [
+                "中心原子",
+                "第一层原子",
+                "第二层原子",
+                "第三层原子",
+                "第四层原子"
+            ];
+
+            // 统计每层的原子数量
+            const atomCounts = {};
+            for (const atom of atoms) {
+                atomCounts[atom.layer] = (atomCounts[atom.layer] || 0) + 1;
+            }
+
+            // 为每一层绘制图例
+            for (let i = 0; i <= currentLayers; i++) {
+                if (atomCounts[i]) {
+                    ctx.beginPath();
+                    ctx.arc(legendX, legendY, 10, 0, Math.PI * 2);
+                    const gradient = ctx.createRadialGradient(
+                        legendX - 3, legendY - 3, 0,
+                        legendX, legendY, 10
+                    );
+                    gradient.addColorStop(0, lightenColor(layerColors[i], 50, atomOpacity));
+                    gradient.addColorStop(0.7, addOpacity(layerColors[i], atomOpacity));
+                    gradient.addColorStop(1, darkenColor(layerColors[i], 30, atomOpacity));
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.strokeStyle = darkenColor(layerColors[i], 20, atomOpacity);
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                    ctx.fillStyle = "#000";
+                    ctx.fillText(`${layerNames[i]} (${atomCounts[i]}个)`, legendX + 20, legendY + 5);
+
+                    legendY += spacing;
+                }
+            }
 
             // 如果显示接触点，添加接触点图例
             if (showContacts) {
                 ctx.beginPath();
-                ctx.arc(legendX, legendY + spacing * 2, 3, 0, Math.PI * 2);
+                ctx.arc(legendX, legendY, 3, 0, Math.PI * 2);
                 ctx.fillStyle = "#FFD700";
                 ctx.fill();
                 ctx.strokeStyle = "#000";
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 ctx.fillStyle = "#000";
-                ctx.fillText("原子接触点", legendX + 20, legendY + spacing * 2 + 5);
+                ctx.fillText("原子接触点", legendX + 20, legendY + 5);
+
+                legendY += spacing;
             }
 
             // 如果显示坐标轴，添加坐标轴图例
             if (showAxes) {
-                const axisY = showContacts ? legendY + spacing * 3 : legendY + spacing * 2;
-
                 // X轴
                 ctx.beginPath();
-                ctx.moveTo(legendX - 10, axisY);
-                ctx.lineTo(legendX + 10, axisY);
+                ctx.moveTo(legendX - 10, legendY);
+                ctx.lineTo(legendX + 10, legendY);
                 ctx.strokeStyle = "rgba(255, 0, 0, 0.7)";
                 ctx.lineWidth = 2;
                 ctx.stroke();
+                ctx.fillStyle = "#000";
+                ctx.fillText("X轴", legendX + 20, legendY + 5);
+
+                legendY += spacing/2;
 
                 // Y轴
                 ctx.beginPath();
-                ctx.moveTo(legendX - 10, axisY + spacing/2);
-                ctx.lineTo(legendX + 10, axisY + spacing/2);
+                ctx.moveTo(legendX - 10, legendY);
+                ctx.lineTo(legendX + 10, legendY);
                 ctx.strokeStyle = "rgba(0, 255, 0, 0.7)";
                 ctx.lineWidth = 2;
                 ctx.stroke();
+                ctx.fillStyle = "#000";
+                ctx.fillText("Y轴", legendX + 20, legendY + 5);
+
+                legendY += spacing/2;
 
                 // Z轴
                 ctx.beginPath();
-                ctx.moveTo(legendX - 10, axisY + spacing);
-                ctx.lineTo(legendX + 10, axisY + spacing);
+                ctx.moveTo(legendX - 10, legendY);
+                ctx.lineTo(legendX + 10, legendY);
                 ctx.strokeStyle = "rgba(0, 0, 255, 0.7)";
                 ctx.lineWidth = 2;
                 ctx.stroke();
-
                 ctx.fillStyle = "#000";
-                ctx.fillText("X轴", legendX + 20, axisY + 5);
-                ctx.fillText("Y轴", legendX + 20, axisY + spacing/2 + 5);
-                ctx.fillText("Z轴", legendX + 20, axisY + spacing + 5);
+                ctx.fillText("Z轴", legendX + 20, legendY + 5);
             }
 
-            // 显示晶格参数和sizeScale信息
-            ctx.fillText(`晶格常数 a = ${a.toFixed(0)}`, legendX, canvas.height - 60);
-            ctx.fillText(`原子半径 r = ${r.toFixed(1)} (≈ ${(r/a).toFixed(3)}×a)`, legendX, canvas.height - 40);
-            ctx.fillText(`顶点原子: ${sizeScale.toFixed(2)}倍中心原子大小`, legendX, canvas.height - 20);
+            // 显示晶格参数和r信息
+            ctx.fillText(`晶格常数 a = ${a.toFixed(1)}`, legendX, canvas.height - 60);
+            ctx.fillText(`原子半径 r = ${r.toFixed(1)}`, legendX, canvas.height - 40);
+            ctx.fillText(`紧密排列条件: 4r = √3×a`, legendX, canvas.height - 20);
         }
 
         // 动画循环
@@ -555,6 +760,14 @@
             }
             drawScene();
             requestAnimationFrame(animate);
+        }
+
+        // 更新原子层数
+        function updateLayers(newLayers) {
+            currentLayers = newLayers;
+            atoms = generateAtoms(currentLayers);
+            updateLabels();
+            document.getElementById('layerValue').textContent = currentLayers;
         }
 
         // 事件监听
@@ -582,39 +795,45 @@
             document.getElementById('opacityValue').textContent = atomOpacity.toFixed(1);
         });
 
-        document.getElementById('sizeScaleControl').addEventListener('input', (e) => {
-            sizeScale = parseFloat(e.target.value);
-            document.getElementById('sizeScaleValue').textContent = sizeScale.toFixed(2);
+        document.getElementById('latticeConstantControl').addEventListener('input', (e) => {
+            updateLatticeConstant(parseFloat(e.target.value));
         });
-        
+
+        document.getElementById('layerControl').addEventListener('input', (e) => {
+            updateLayers(parseInt(e.target.value));
+        });
+
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             let startX = e.clientX - rect.left;
             let startY = e.clientY - rect.top;
-            
+
             const onMouseMove = (e) => {
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                
+
                 angleY += (x - startX) * 0.01;
                 angleX += (y - startY) * 0.01;
-                
+
                 startX = x;
                 startY = y;
             };
-            
+
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
             };
-            
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
-        
+
         // 验证原子间距
         const distances = checkAtomDistances();
-        
+
+        // 初始化标签
+        updateLabels();
+
         // 开始动画
         animate();
     </script>
